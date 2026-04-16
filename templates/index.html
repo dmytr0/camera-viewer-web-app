@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camera Viewer</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-view">
+  <div class="login-box">
+    <h1>&#128249; Camera Viewer</h1>
+    <p>Введіть облікові дані для доступу до камери</p>
+    <div class="field">
+      <label for="login-username">Логін</label>
+      <input type="text" id="login-username" autocomplete="username" placeholder="username">
+    </div>
+    <div class="field">
+      <label for="login-password">Пароль</label>
+      <input type="password" id="login-password" autocomplete="current-password" placeholder="password">
+    </div>
+    <button class="btn-primary" id="login-btn" onclick="doLogin()">Увійти</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main-view">
+  <div class="header">
+    <h1>&#128249; Camera Viewer</h1>
+    <div class="date-nav">
+      <button id="btn-prev" onclick="navigateDate(-1)" disabled>&#9664;</button>
+      <input type="date" id="date-input" onchange="loadDate(this.value)">
+      <button id="btn-next" onclick="navigateDate(1)" disabled>&#9654;</button>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Вийти</button>
+  </div>
+
+  <div class="content">
+    <div class="banner" id="error-banner">
+      <span id="error-text"></span>
+      <button onclick="hideBanner()">&#10005;</button>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="section">
+      <div class="section-label">Timeline — натисніть на відрізок для перегляду запису</div>
+      <div class="timeline-hours" id="timeline-hours"></div>
+      <div class="timeline" id="timeline" onclick="onTimelineClick(event)">
+        <div class="timeline-cursor" id="timeline-cursor"></div>
+        <div class="no-records" id="timeline-empty">Немає записів для цієї дати</div>
+      </div>
+      <div class="timeline-legend">
+        <span><span class="legend-dot" style="background:var(--periodic)"></span>Periodic</span>
+        <span><span class="legend-dot" style="background:var(--alert)"></span>Alert / Motion</span>
+        <span style="margin-left:auto;color:var(--cursor);font-size:11px;">&#9474; поточна позиція</span>
+        <span id="timeline-zoom-label" style="margin-left:10px;color:var(--text-dim);font-size:11px;display:none;"></span>
+      </div>
+    </div>
+
+    <!-- PLAYER -->
+    <div class="section">
+      <div class="section-label">Video Player</div>
+      <div class="video-placeholder" id="video-placeholder">&#9654;</div>
+      <video id="video-player" controls style="display:none"
+             ontimeupdate="onVideoTimeUpdate()" onended="onVideoEnded()"></video>
+      <div class="video-meta" id="video-meta" style="display:none">
+        <span class="name" id="video-name"></span>
+        <span class="badge" id="video-type-badge"></span>
+        <span id="video-time-range"></span>
+        <span id="video-size"></span>
+      </div>
+      <div class="video-controls">
+        <button class="btn-secondary" id="btn-prev-clip" onclick="navigateClip(-1)" disabled>&#9194; Попередній</button>
+        <button class="btn-secondary" id="btn-next-clip" onclick="navigateClip(1)" disabled>&#9193; Наступний</button>
+        <a class="btn-secondary download" id="btn-download" style="display:none;text-decoration:none;">&#11015; Завантажити</a>
+      </div>
+      <div class="player-settings">
+        <div class="speed-control">
+          <label for="speed-slider">Швидкість</label>
+          <input type="range" id="speed-slider" min="0" max="100" value="45" oninput="onSpeedChange(this.value)">
+          <span class="speed-val" id="speed-display">1.0×</span>
+        </div>
+        <div class="autoplay-control">
+          <input type="checkbox" id="autoplay-next" checked onchange="onAutoplayChange(this.checked)">
+          <label for="autoplay-next">Відтворювати наступне автоматично</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVENTS GALLERY -->
+    <div class="section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <div class="section-label" style="margin-bottom:0">&#128247; Motion Events</div>
+        <div class="filter-bar" style="margin-bottom:0" id="filter-bar">
+          <button class="filter-btn active" data-ch="all" onclick="setChannelFilter('all')">Всі</button>
+          <button class="filter-btn" data-ch="0" onclick="setChannelFilter(0)">Канал 0</button>
+          <button class="filter-btn" data-ch="1" onclick="setChannelFilter(1)">Канал 1</button>
+        </div>
+      </div>
+      <div class="loading-bar" id="events-loading"><span class="spinner"></span>Завантаження...</div>
+      <div class="events-grid" id="events-grid"></div>
+      <div class="no-items" id="events-empty" style="display:none">Немає фото для цієї дати</div>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()">&#10005;</button>
+  <img id="lightbox-img" src="" alt="">
+  <div class="lb-info" id="lightbox-info"></div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

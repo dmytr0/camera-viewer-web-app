@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment / secrets
+.env
+
+# Video cache (transcoded files, can be large)
+.video_cache/
+
+# IDE
+.idea/
+.vscode/
+
+# Test / dev artifacts
+.playwright-mcp/
+
+# macOS
+.DS_Store
