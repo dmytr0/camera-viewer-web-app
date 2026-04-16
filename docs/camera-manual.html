@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5MP 30x PTZ IP-камера — Апаратний мануал</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222535;
+      --border: #2e3248;
+      --accent: #4f8ef7;
+      --accent2: #e05c5c;
+      --green: #3ecf8e;
+      --yellow: #f0c040;
+      --text: #e0e4f0;
+      --muted: #7a82a0;
+      --code-bg: #0b0e17;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 2rem 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    header .model-badge {
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: .5rem;
+    }
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: .35rem;
+    }
+    header .sub {
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      z-index: 50;
+      overflow-x: auto;
+    }
+    nav ul {
+      display: flex;
+      list-style: none;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      gap: .1rem;
+      white-space: nowrap;
+    }
+    nav a {
+      display: block;
+      padding: .65rem .9rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .82rem;
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s;
+    }
+    nav a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.25rem;
+      padding-bottom: .6rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    h2 .num {
+      background: var(--accent);
+      color: #fff;
+      font-size: .7rem;
+      font-weight: 800;
+      padding: .15rem .45rem;
+      border-radius: 4px;
+      letter-spacing: .05em;
+    }
+
+    h3 {
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin: 1.5rem 0 .6rem;
+    }
+    h3:first-child { margin-top: 0; }
+
+    p { color: #b8bdd4; margin-bottom: .6rem; }
+    p:last-child { margin-bottom: 0; }
+
+    /* Specs table */
+    .specs { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .specs tr { border-bottom: 1px solid var(--border); }
+    .specs tr:last-child { border-bottom: none; }
+    .specs td { padding: .55rem .75rem; }
+    .specs td:first-child {
+      color: var(--muted);
+      width: 42%;
+      font-size: .82rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .specs td:last-child { color: var(--text); font-weight: 500; }
+
+    /* Pinout tables */
+    .pins { width: 100%; border-collapse: collapse; font-size: .85rem; font-family: 'Courier New', monospace; }
+    .pins th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      padding: .45rem .75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .pins td { padding: .45rem .75rem; border-bottom: 1px solid var(--border); }
+    .pins tr:last-child td { border-bottom: none; }
+    .pin-num {
+      color: var(--muted);
+      font-size: .78rem;
+      width: 40px;
+    }
+    .pin-name { color: var(--yellow); font-weight: 600; }
+    .pin-desc { color: #9aa0bc; font-size: .82rem; font-family: 'Segoe UI', sans-serif; }
+    .pin-v { color: var(--green); }
+    .pin-gnd { color: var(--accent2); }
+    .pin-sig { color: #c084fc; }
+    .pin-eth { color: var(--accent); }
+
+    /* Diagram */
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: .82rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin: .75rem 0;
+    }
+    .diagram .label { color: var(--muted); }
+    .diagram .conn { color: var(--yellow); }
+    .diagram .val { color: var(--green); }
+    .diagram .warn { color: var(--accent2); }
+
+    /* Code */
+    code {
+      background: var(--code-bg);
+      color: var(--green);
+      padding: .15rem .45rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: .85rem;
+      border: 1px solid var(--border);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: .85rem;
+      line-height: 1.7;
+      margin: .75rem 0;
+      color: #c8cfe8;
+    }
+    pre .c { color: #4b5470; }
+    pre .v { color: var(--green); }
+    pre .k { color: var(--accent); }
+
+    /* Alert */
+    .alert {
+      display: flex;
+      gap: .75rem;
+      padding: .85rem 1rem;
+      border-radius: 7px;
+      margin: .75rem 0;
+      font-size: .875rem;
+    }
+    .alert-warn {
+      background: rgba(224, 92, 92, .1);
+      border: 1px solid rgba(224, 92, 92, .35);
+      color: #f0a0a0;
+    }
+    .alert-info {
+      background: rgba(79, 142, 247, .08);
+      border: 1px solid rgba(79, 142, 247, .3);
+      color: #a0bef0;
+    }
+    .alert-ok {
+      background: rgba(62, 207, 142, .08);
+      border: 1px solid rgba(62, 207, 142, .3);
+      color: #80dfb4;
+    }
+    .alert-icon { flex-shrink: 0; font-size: 1rem; margin-top: .05rem; }
+
+    /* Steps */
+    ol.steps { list-style: none; counter-reset: s; padding: 0; }
+    ol.steps li {
+      counter-increment: s;
+      display: flex;
+      gap: .9rem;
+      margin-bottom: .85rem;
+    }
+    ol.steps li::before {
+      content: counter(s);
+      min-width: 1.75rem;
+      height: 1.75rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: .8rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: .15rem;
+    }
+    ol.steps li .s-body { flex: 1; }
+    ol.steps li .s-title { font-weight: 600; color: #fff; margin-bottom: .2rem; font-size: .9rem; }
+    ol.steps li .s-desc { color: #9aa0bc; font-size: .875rem; }
+
+    /* Images */
+    .img-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .75rem;
+      margin: .75rem 0;
+    }
+    .img-row.single { grid-template-columns: 1fr; }
+    @media (max-width: 600px) { .img-row { grid-template-columns: 1fr; } }
+    .img-wrap {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .img-wrap img { width: 100%; display: block; }
+    .img-cap {
+      font-size: .75rem;
+      color: var(--muted);
+      padding: .4rem .65rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Dimensions SVG */
+    .dim-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      text-align: center;
+      margin: .75rem 0;
+    }
+    .dim-box svg { max-width: 360px; width: 100%; }
+
+    ul.ul { list-style: none; padding: 0; }
+    ul.ul li { padding: .3rem 0; padding-left: 1.2rem; position: relative; color: #9aa0bc; font-size: .875rem; }
+    ul.ul li::before { content: '·'; position: absolute; left: 0; color: var(--accent); font-size: 1.2rem; line-height: 1; top: .28rem; }
+
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 600;
+      padding: .15rem .5rem;
+      border-radius: 4px;
+      margin-right: .25rem;
+      margin-bottom: .25rem;
+      letter-spacing: .04em;
+    }
+    .tag.blue { border-color: rgba(79,142,247,.4); color: var(--accent); background: rgba(79,142,247,.08); }
+    .tag.green { border-color: rgba(62,207,142,.4); color: var(--green); background: rgba(62,207,142,.08); }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.25rem 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="model-badge">Апаратний мануал</div>
+  <h1>5MP 30x PTZ IP-камера + WiFi</h1>
+  <div class="sub">Модульна плата · Sony IMX335 · H.265 · Marviosec Store</div>
+  <div style="margin-top:.75rem">
+    <span class="tag blue">5MP 2592×1944</span>
+    <span class="tag blue">30x Optical Zoom</span>
+    <span class="tag blue">H.265</span>
+    <span class="tag green">WiFi</span>
+    <span class="tag green">Starlight</span>
+    <span class="tag green">Human Detection</span>
+    <span class="tag">RTSP</span>
+    <span class="tag">Onvif</span>
+    <span class="tag">UART PTZ</span>
+    <span class="tag">IRCUT</span>
+  </div>
+</header>
+
+<nav>
+  <ul>
+    <li><a href="#specs">Характеристики</a></li>
+    <li><a href="#dims">Габарити</a></li>
+    <li><a href="#connectors">Роз'єми</a></li>
+    <li><a href="#power">Живлення</a></li>
+    <li><a href="#ethernet">Ethernet</a></li>
+    <li><a href="#ircut">ІЧ-фільтр</a></li>
+    <li><a href="#ptz">PTZ керування</a></li>
+    <li><a href="#wifi">WiFi модуль</a></li>
+    <li><a href="#tfcard">TF-карта</a></li>
+    <li><a href="#network">Мережа / RTSP</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <!-- 1. SPECS -->
+  <section id="specs">
+    <h2><span class="num">01</span> Технічні характеристики</h2>
+    <table class="specs">
+      <tr><td>Сенсор</td><td>Sony IMX335, 1/2.8"</td></tr>
+      <tr><td>Роздільна здатність</td><td>5MP · 2592 × 1944 @ 25 fps</td></tr>
+      <tr><td>Кодек</td><td>H.265 (HEVC)</td></tr>
+      <tr><td>Зум</td><td>30x оптичний · 4.5–135 мм</td></tr>
+      <tr><td>Режим нічного бачення</td><td>Starlight (кольоровий при слабкому освітленні)</td></tr>
+      <tr><td>AI-функції</td><td>Виявлення людини (Human Detection)</td></tr>
+      <tr><td>Мережа</td><td>100 Мбіт Ethernet (RJ45 через кабель)</td></tr>
+      <tr><td>WiFi</td><td>2.4 ГГц, підключається окремим модулем</td></tr>
+      <tr><td>Аудіо</td><td>Вхід мікрофону + вихід динаміку</td></tr>
+      <tr><td>Протоколи</td><td>RTSP · RTMP · Onvif · HTTP</td></tr>
+      <tr><td>PTZ керування</td><td>UART (2 канали)</td></tr>
+      <tr><td>ІЧ-фільтр (IRCUT)</td><td>2-провідний керований (IRCUT+ / IRCUT−)</td></tr>
+      <tr><td>Живлення</td><td>12V DC · роз'єм 2.1×5.5 мм</td></tr>
+      <tr><td>Локальне сховище</td><td>TF/microSD через FPC-кабель</td></tr>
+    </table>
+  </section>
+
+  <!-- 2. DIMS -->
+  <section id="dims">
+    <h2><span class="num">02</span> Габарити модуля</h2>
+
+    <div class="img-row single">
+      <div class="img-wrap">
+        <img src="https://ae-pic-a1.aliexpress-media.com/kf/Sedb65356c3d44996a9df52173fa77b30N.jpg_960x960q75.jpg_.avif" alt="габарити модуля">
+        <div class="img-cap">Зовнішні розміри 1080P/5MP 30x модуля</div>
+      </div>
+    </div>
+
+    <div class="diagram">
+<span class="label">  Довжина корпусу  :</span> <span class="val">89 мм</span>
+<span class="label">  Ширина корпусу   :</span> <span class="val">54 мм</span>
+<span class="label">  Висота корпусу   :</span> <span class="val">50 мм</span>
+<span class="label">  Діаметр об'єктиву:</span> <span class="val">38 мм</span>
+    </div>
+
+    <div class="img-row">
+      <div class="img-wrap">
+        <img src="https://ae-pic-a1.aliexpress-media.com/kf/S019c16f37ca14f198e445511f461685f8.jpg_960x960q75.jpg_.avif" alt="вид збоку">
+        <div class="img-cap">Вид збоку: плата керування + об'єктив</div>
+      </div>
+      <div class="img-wrap">
+        <img src="https://ae-pic-a1.aliexpress-media.com/kf/Sbab45b56892945878c4bcf6b10108401U.jpg_960x960q75.jpg_.avif" alt="вид з іншого боку">
+        <div class="img-cap">Вид з протилежного боку</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. CONNECTORS -->
+  <section id="connectors">
+    <h2><span class="num">03</span> Схема роз'ємів</h2>
+
+    <div class="img-row single">
+      <div class="img-wrap">
+        <img src="https://ae-pic-a1.aliexpress-media.com/kf/S33556c62160a46c1ac78f4b9c5323ab6B.jpg_960x960q75.jpg_.avif" alt="схема роз'ємів 5MP 30x">
+        <div class="img-cap">Схема роз'ємів — 5MP 30x модель (з офіційного фото)</div>
+      </div>
+    </div>
+
+    <h3>Ethernet-роз'єм (4 піни)</h3>
+    <table class="pins">
+      <thead><tr><th>Пін</th><th>Назва</th><th>Опис</th></tr></thead>
+      <tbody>
+        <tr><td class="pin-num">1</td><td class="pin-name pin-eth">ETHRX−</td><td class="pin-desc">Ethernet Receive −</td></tr>
+        <tr><td class="pin-num">2</td><td class="pin-name pin-eth">ETHRX+</td><td class="pin-desc">Ethernet Receive +</td></tr>
+        <tr><td class="pin-num">3</td><td class="pin-name pin-eth">ETHTX−</td><td class="pin-desc">Ethernet Transmit −</td></tr>
+        <tr><td class="pin-num">4</td><td class="pin-name pin-eth">ETHTX+</td><td class="pin-desc">Ethernet Transmit +</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Основний роз'єм (6 пінів) — живлення + UART</h3>
+    <table class="pins">
+      <thead><tr><th>Пін</th><th>Назва</th><th>Опис</th></tr></thead>
+      <tbody>
+        <tr><td class="pin-num">1</td><td class="pin-name pin-v">12V</td><td class="pin-desc">Живлення +12V DC</td></tr>
+        <tr><td class="pin-num">2</td><td class="pin-name pin-gnd">GND</td><td class="pin-desc">Земля</td></tr>
+        <tr><td class="pin-num">3</td><td class="pin-name pin-sig">RXD</td><td class="pin-desc">UART 1 — Receive (підключається до TX зовнішнього пристрою)</td></tr>
+        <tr><td class="pin-num">4</td><td class="pin-name pin-sig">TXD</td><td class="pin-desc">UART 1 — Transmit (підключається до RX зовнішнього пристрою)</td></tr>
+        <tr><td class="pin-num">5</td><td class="pin-name pin-sig">RXD</td><td class="pin-desc">UART 2 — Receive</td></tr>
+        <tr><td class="pin-num">6</td><td class="pin-name pin-sig">TXD</td><td class="pin-desc">UART 2 — Transmit</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Роз'єм IRCUT (2 піни) — ІЧ-фільтр</h3>
+    <table class="pins">
+      <thead><tr><th>Пін</th><th>Назва</th><th>Опис</th></tr></thead>
+      <tbody>
+        <tr><td class="pin-num">1</td><td class="pin-name pin-v">IRCUT+</td><td class="pin-desc">Плюс котушки ІЧ-фільтру</td></tr>
+        <tr><td class="pin-num">2</td><td class="pin-name pin-gnd">IRCUT−</td><td class="pin-desc">Мінус котушки ІЧ-фільтру</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Роз'єм WiFi-модуля (4 піни)</h3>
+    <table class="pins">
+      <thead><tr><th>Пін</th><th>Назва</th><th>Опис</th></tr></thead>
+      <tbody>
+        <tr><td class="pin-num">1</td><td class="pin-name pin-v">3.3V</td><td class="pin-desc">Живлення WiFi-модуля</td></tr>
+        <tr><td class="pin-num">2</td><td class="pin-name pin-sig">USB−</td><td class="pin-desc">USB Data −</td></tr>
+        <tr><td class="pin-num">3</td><td class="pin-name pin-sig">USB+</td><td class="pin-desc">USB Data +</td></tr>
+        <tr><td class="pin-num">4</td><td class="pin-name pin-gnd">GND</td><td class="pin-desc">Земля</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Аудіо (на платі)</h3>
+    <table class="pins">
+      <thead><tr><th>Пін</th><th>Назва</th><th>Опис</th></tr></thead>
+      <tbody>
+        <tr><td class="pin-num">—</td><td class="pin-name pin-sig">Audio IN</td><td class="pin-desc">Вхід мікрофону (MIC)</td></tr>
+        <tr><td class="pin-num">—</td><td class="pin-name pin-sig">Audio OUT</td><td class="pin-desc">Вихід на динамік (Speaker)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 4. POWER -->
+  <section id="power">
+    <h2><span class="num">04</span> Живлення 12V DC</h2>
+
+    <p>Модуль живиться від <strong>12V DC</strong> через роз'єм у складі комбінованого кабелю (Ethernet + живлення). Роз'єм живлення на кабелі — <strong>2.1×5.5 мм</strong>.</p>
+
+    <div class="alert alert-warn">
+      <span class="alert-icon">⚠️</span>
+      <div>
+        <strong>Полярність кабелю не підписана!</strong> Перевірте мультиметром перед підключенням.<br>
+        <strong>Центральний контакт = «+» (плюс) · Зовнішній контакт = «−» (мінус)</strong>
+      </div>
+    </div>
+
+    <div class="diagram">
+<span class="label">  Роз'єм 2.1×5.5 мм</span>
+
+<span class="label">       ┌─────────┐</span>
+<span class="label">       │  </span><span class="val">● +12V</span><span class="label">  │  ← центральний контакт (плюс)</span>
+<span class="label">       │         │</span>
+<span class="label">       └── </span><span class="warn">○ GND</span><span class="label"> ──┘  ← зовнішній контакт (мінус)</span>
+    </div>
+
+    <h3>Розпіновка у кабелі</h3>
+    <table class="pins">
+      <thead><tr><th>Колір дроту</th><th>Сигнал</th><th>Опис</th></tr></thead>
+      <tbody>
+        <tr><td class="pin-num" style="width:120px">Червоний</td><td class="pin-name pin-v">+12V</td><td class="pin-desc">Пін 1 основного роз'єму</td></tr>
+        <tr><td class="pin-num">Чорний</td><td class="pin-name pin-gnd">GND</td><td class="pin-desc">Пін 2 основного роз'єму</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-info">
+      <span class="alert-icon">ℹ️</span>
+      <span>Споживання: ~2–3 Вт у режимі очікування, до ~5 Вт при активному зумі. Використовуйте блок живлення ≥ 1А.</span>
+    </div>
+  </section>
+
+  <!-- 5. ETHERNET -->
+  <section id="ethernet">
+    <h2><span class="num">05</span> Ethernet підключення</h2>
+
+    <p>Ethernet-сигнали виходять через <strong>4-пінний роз'єм</strong> на основній платі і об'єднані в комбінований кабель разом із живленням 12V.</p>
+
+    <div class="diagram">
+<span class="label">  Основна плата        Кабель         Роз'єм RJ45</span>
+<span class="label">  ┌──────────┐                         ┌──────────┐</span>
+<span class="label">  │ ETHRX− ──┼─────────────────────────┼── пара RX │</span>
+<span class="label">  │ ETHRX+ ──┼─────────────────────────┼── пара RX │</span>
+<span class="label">  │ ETHTX− ──┼─────────────────────────┼── пара TX │</span>
+<span class="label">  │ ETHTX+ ──┼─────────────────────────┼── пара TX │</span>
+<span class="label">  └──────────┘                         └──────────┘</span>
+    </div>
+
+    <p>Стандартний 100 Мбіт Ethernet. Підключається до маршрутизатора або комутатора кабелем зі стандартним RJ45. DHCP увімкнено за замовчуванням.</p>
+  </section>
+
+  <!-- 6. IRCUT -->
+  <section id="ircut">
+    <h2><span class="num">06</span> ІЧ-фільтр (IRCUT)</h2>
+
+    <p>IRCUT (Infrared Cut filter) — механічний фільтр, що перемикає камеру між денним та нічним режимом. Керується двома контактами безпосередньо з плати.</p>
+
+    <div class="img-row single">
+      <div class="img-wrap">
+        <img src="https://ae-pic-a1.aliexpress-media.com/kf/S33556c62160a46c1ac78f4b9c5323ab6B.jpg_960x960q75.jpg_.avif" alt="IRCUT роз'єм на платі">
+        <div class="img-cap">Роз'єм IRCUT видно праворуч на платі керування (позначено «Ircut interfaces»)</div>
+      </div>
+    </div>
+
+    <h3>Підключення зовнішньої ІЧ-підсвітки</h3>
+    <p>Зовнішня ІЧ-підсвітка підключається до контактів IRCUT+ / IRCUT− і керується автоматично прошивкою камери залежно від освітленості.</p>
+
+    <table class="pins">
+      <thead><tr><th>Контакт</th><th>Підключення</th></tr></thead>
+      <tbody>
+        <tr><td class="pin-name pin-v">IRCUT+</td><td class="pin-desc">«+» обмотки реле або «+» ІЧ-підсвітки (через реле)</td></tr>
+        <tr><td class="pin-name pin-gnd">IRCUT−</td><td class="pin-desc">«−» обмотки реле або «−» ІЧ-підсвітки</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-info">
+      <span class="alert-icon">ℹ️</span>
+      <div>
+        IRCUT-вихід видає невеликий струм (логічний рівень). Для керування потужною ІЧ-підсвіткою використовуйте <strong>проміжне реле або MOSFET-ключ</strong>.
+      </div>
+    </div>
+
+    <h3>Логіка роботи</h3>
+    <div class="diagram">
+<span class="label">  День   : IRCUT+ = HIGH → фільтр вставлено  → кольорове зображення</span>
+<span class="label">  Ніч    : IRCUT+ = LOW  → фільтр прибрано   → чорно-біле, ІЧ-підсвітка ON</span>
+<span class="label">  Авто   : керується датчиком освітленості прошивки камери</span>
+    </div>
+  </section>
+
+  <!-- 7. PTZ -->
+  <section id="ptz">
+    <h2><span class="num">07</span> PTZ керування (UART)</h2>
+
+    <p>Модуль оснащений двома UART-каналами для керування PTZ-механізмом (Pan–Tilt–Zoom). UART виводиться на піни 3–6 основного 6-пінного роз'єму.</p>
+
+    <h3>Розпіновка UART</h3>
+    <table class="pins">
+      <thead><tr><th>Пін</th><th>Назва</th><th>Підключення до PTZ-привода</th></tr></thead>
+      <tbody>
+        <tr><td class="pin-num">3</td><td class="pin-name pin-sig">RXD (UART1)</td><td class="pin-desc">→ TXD PTZ-привода</td></tr>
+        <tr><td class="pin-num">4</td><td class="pin-name pin-sig">TXD (UART1)</td><td class="pin-desc">→ RXD PTZ-привода</td></tr>
+        <tr><td class="pin-num">5</td><td class="pin-name pin-sig">RXD (UART2)</td><td class="pin-desc">→ TXD другого PTZ-пристрою</td></tr>
+        <tr><td class="pin-num">6</td><td class="pin-name pin-sig">TXD (UART2)</td><td class="pin-desc">→ RXD другого PTZ-пристрою</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-warn">
+      <span class="alert-icon">⚠️</span>
+      <span>UART-рівні <strong>3.3V TTL</strong>. При підключенні до RS-485 PTZ-привода використовуйте конвертер TTL→RS-485.</span>
+    </div>
+
+    <h3>Схема підключення PTZ-привода</h3>
+    <div class="diagram">
+<span class="label">  Камера (6-пін)          PTZ-привод</span>
+<span class="label">  ┌──────────┐             ┌──────────┐</span>
+<span class="label">  │ Пін 3 RXD┼─────────────┼ TXD      │</span>
+<span class="label">  │ Пін 4 TXD┼─────────────┼ RXD      │</span>
+<span class="label">  │ Пін 2 GND┼─────────────┼ GND      │</span>
+<span class="label">  └──────────┘             └──────────┘</span>
+
+<span class="label">  Для RS-485 PTZ:</span>
+<span class="label">  Камера UART → TTL-RS485 конвертер → A/B PTZ-привода</span>
+    </div>
+
+    <h3>Керування зумом об'єктиву</h3>
+    <p>30x оптичний зум керується безпосередньо через мережевий інтерфейс (HTTP/Onvif). Команди Zoom In / Zoom Out надсилаються з веб-інтерфейсу або Onvif-клієнта — окремого фізичного підключення для зуму не потрібно.</p>
+  </section>
+
+  <!-- 8. WIFI -->
+  <section id="wifi">
+    <h2><span class="num">08</span> WiFi модуль</h2>
+
+    <p>WiFi-модуль підключається до 4-пінного роз'єму на платі керування через інтерфейс USB. У комплекті варіанта «Add WiFi» модуль вже встановлений.</p>
+
+    <div class="img-row">
+      <div class="img-wrap">
+        <img src="https://ae-pic-a1.aliexpress-media.com/kf/S6c191a9c694a42279c7b10f8618bf742i.jpg_960x960q75.jpg_.avif" alt="WiFi модуль та TF-card">
+        <div class="img-cap">WiFi-модуль і TF-card підключені до плати керування</div>
+      </div>
+      <div class="img-wrap">
+        <img src="https://ae-pic-a1.aliexpress-media.com/kf/S9c6db5c44474429da3dccf11d32b26e0S.jpg_960x960q75.jpg_.avif" alt="Starlight 5MP PTZ Module WiFi">
+        <div class="img-cap">5MP PTZ модуль з WiFi/AP підтримкою</div>
+      </div>
+    </div>
+
+    <h3>Роз'єм WiFi-модуля</h3>
+    <div class="diagram">
+<span class="label">  ┌───┬───────┬────────────────────────────┐</span>
+<span class="label">  │ 1 │ </span><span class="val">3.3V </span><span class="label">│ Живлення модуля              │</span>
+<span class="label">  │ 2 │ </span><span class="conn">USB− </span><span class="label">│ USB Data Minus               │</span>
+<span class="label">  │ 3 │ </span><span class="conn">USB+ </span><span class="label">│ USB Data Plus                │</span>
+<span class="label">  │ 4 │ </span><span class="warn">GND  </span><span class="label">│ Земля                        │</span>
+<span class="label">  └───┴───────┴────────────────────────────┘</span>
+    </div>
+
+    <h3>Режим WiFi</h3>
+    <ul class="ul">
+      <li>Підтримує режим <strong>AP (точка доступу)</strong> — камера сама створює WiFi-мережу</li>
+      <li>Підтримує режим <strong>Client (клієнт)</strong> — камера підключається до існуючого роутера</li>
+      <li>Налаштування SSID та пароля — через веб-інтерфейс або Onvif</li>
+    </ul>
+
+    <div class="alert alert-info">
+      <span class="alert-icon">ℹ️</span>
+      <span>При першому підключенні рекомендується налаштовувати камеру через Ethernet, а потім переключатися на WiFi.</span>
+    </div>
+  </section>
+
+  <!-- 9. TF CARD -->
+  <section id="tfcard">
+    <h2><span class="num">09</span> TF-карта (microSD)</h2>
+
+    <p>Слот для TF/microSD карти винесений на окрему маленьку плату і підключається до основної через <strong>FPC-кабель</strong> (гнучкий шлейф).</p>
+
+    <div class="img-row single">
+      <div class="img-wrap">
+        <img src="https://ae-pic-a1.aliexpress-media.com/kf/S6c191a9c694a42279c7b10f8618bf742i.jpg_960x960q75.jpg_.avif" alt="TF card slot FPC">
+        <div class="img-cap">TF-card плата підключається до основної через FPC-шлейф</div>
+      </div>
+    </div>
+
+    <ul class="ul">
+      <li>Підключення: FPC-кабель між основною платою та платою TF-слоту</li>
+      <li>Підтримуваний формат карток: microSD / TF</li>
+      <li>Використовується для локального запису відео</li>
+      <li>Вставляти картку при <strong>вимкненому живленні</strong> камери</li>
+    </ul>
+
+    <div class="alert alert-warn">
+      <span class="alert-icon">⚠️</span>
+      <span>FPC-кабель крихкий. Не перегинайте та не натягуйте. При монтажі залишайте достатній радіус вигину.</span>
+    </div>
+  </section>
+
+  <!-- 10. NETWORK / RTSP -->
+  <section id="network">
+    <h2><span class="num">10</span> Мережа, веб-інтерфейс та RTSP</h2>
+
+    <h3>Перший запуск</h3>
+    <ol class="steps">
+      <li>
+        <div class="s-body">
+          <div class="s-title">Підключіть Ethernet та живлення</div>
+          <div class="s-desc">Ethernet через комбінований кабель до роутера, живлення 12V з правильною полярністю.</div>
+        </div>
+      </li>
+      <li>
+        <div class="s-body">
+          <div class="s-title">Знайдіть IP-адресу камери</div>
+          <div class="s-desc">Відкрийте список DHCP-клієнтів у роутері, або скористайтесь <strong>Onvif Device Manager</strong> (Windows, безкоштовно) — він автоматично виявляє камеру в локальній мережі.</div>
+        </div>
+      </li>
+      <li>
+        <div class="s-body">
+          <div class="s-title">Відкрийте веб-інтерфейс</div>
+          <div class="s-desc">У браузері введіть IP-адресу камери. Стандартні дані: логін <code>admin</code>, пароль — <em>порожньо</em>.</div>
+        </div>
+      </li>
+    </ol>
+
+    <h3>Веб-інтерфейс камери</h3>
+    <pre>
+<span class="c"># Адреса веб-інтерфейсу</span>
+http://<span class="v">&lt;IP-камери&gt;</span>
+
+<span class="c"># Логін за замовчуванням</span>
+<span class="k">User:</span>     <span class="v">admin</span>
+<span class="k">Password:</span> <span class="v">(порожнє)</span>
+    </pre>
+
+    <p>Через веб-інтерфейс налаштовуються: роздільна здатність, бітрейт, виявлення руху/людини, IRCUT-режим, розклад запису, PTZ-пресети, WiFi.</p>
+
+    <h3>RTSP-потік</h3>
+    <pre>
+<span class="c"># Основний потік (отримано через Onvif Device Manager)</span>
+rtsp://<span class="v">&lt;IP-камери&gt;</span>/11
+
+<span class="c"># Приклад:</span>
+rtsp://<span class="v">192.168.1.100</span>/11
+
+<span class="c"># Для VLC: Медіа → Відкрити мережевий потік → вставте URL</span>
+    </pre>
+
+    <div class="alert alert-info">
+      <span class="alert-icon">ℹ️</span>
+      <span>Точну RTSP-адресу рекомендується отримати через <strong>Onvif Device Manager → Media → Profiles → Stream URI</strong>, оскільки вона може відрізнятися залежно від версії прошивки.</span>
+    </div>
+
+    <h3>Onvif</h3>
+    <ul class="ul">
+      <li>Стандартний порт Onvif: <code>80</code> або <code>8080</code></li>
+      <li>Підтримує: перегляд потоку, PTZ-команди (Zoom In/Out, Pan, Tilt), пресети, налаштування зображення</li>
+      <li>Сумісний з: Onvif Device Manager, Blue Iris, iSpy, Home Assistant, Frigate</li>
+    </ul>
+
+    <div class="divider"></div>
+
+    <div class="alert alert-ok">
+      <span class="alert-icon">✓</span>
+      <span>Документація (PDF) зберігається на сторінці товару AliExpress у розділі «Item guides &amp; documents». Збережіть її локально — вона може містити актуальний pinout для конкретної версії прошивки.</span>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>

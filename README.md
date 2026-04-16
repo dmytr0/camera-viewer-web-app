@@ -4,6 +4,18 @@
 
 A web app for browsing IP camera recordings directly from the SD card in a browser.
 
+## Compatible Hardware
+
+Built and tested with a **5MP 30× optical zoom** IP camera module (HiXVision/HiSilicon-based).
+
+[![5MP 30x zoom camera](media/img.png)](https://s.click.aliexpress.com/e/_c4MdieUV)
+
+🛒 [Buy on AliExpress](https://s.click.aliexpress.com/e/_c4MdieUV)
+
+**Camera documentation:**
+- [Camera manual](docs/camera-manual.html)
+- [Product datasheet (PDF)](docs/zoom_cam.pdf)
+
 ## Purpose
 
 The camera stores video and photos on a built-in SD card as raw H.264/H.265 files with no convenient viewing interface. This app acts as a local web viewer: it connects to the camera over the network, parses the SD card directory structure, and provides a clean UI with a timeline, video player, and motion event gallery.
