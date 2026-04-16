@@ -41,7 +41,7 @@ cp .env.example .env
 python app.py
 ```
 
-Відкрити у браузері: `http://localhost:5000`
+Відкрити у браузері: `http://localhost:<PORT>` (порт з `.env`, за замовчуванням `5000`)
 
 ## Конфігурація
 
