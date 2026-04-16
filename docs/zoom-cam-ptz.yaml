@@ -1,0 +1,214 @@
+esphome:
+  name: zoom-cam-ptz
+  friendly_name: Zoom Cam PTZ
+  on_boot:
+    priority: -100
+    then:
+      - servo.write:
+          id: servo_pan
+          level: 0.0
+      - servo.write:
+          id: servo_tilt
+          level: 0.0
+      - delay: 1s
+      - servo.detach: servo_pan
+      - servo.detach: servo_tilt
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: ESP32S3
+  framework:
+    type: esp-idf
+    version: recommended
+    sdkconfig_options:
+      CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG: y
+      CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE: "n"
+
+# Enable logging
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Zoom-Cam-Ptz Fallback Hotspot"
+    password: !secret ap_fallback_password
+
+
+# ── UART від камери (Pelco-D) ─────────────────────────────
+# Камера: Пін 4 (TXD) → ESP GPIO4 (RX)
+#         Пін 3 (RXD) → ESP GPIO5 (TX)  ← опційно
+#         Пін 2 (GND) → ESP GND
+uart:
+  id: cam_uart
+  rx_pin: GPIO4
+  tx_pin: GPIO5
+  baud_rate: 9600   
+  data_bits: 8
+  parity: NONE
+  stop_bits: 1
+
+# ── PWM виходи для сервоприводів ──────────────────────────
+# Servo Pan  → GPIO6
+# Servo Tilt → GPIO7
+output:
+  - platform: ledc
+    id: pan_pwm
+    pin: GPIO13
+    frequency: 50 Hz
+
+  - platform: ledc
+    id: tilt_pwm
+    pin: GPIO12
+    frequency: 50 Hz
+
+# ── Сервоприводи ──────────────────────────────────────────
+# Діапазон -1.0 … 0.0 (центр) … +1.0
+# Стандартний сервопривід: 1мс(−1.0) / 1.5мс(0.0) / 2мс(+1.0)
+servo:
+  - id: servo_pan
+    output: pan_pwm
+    min_level: 3.0%    # ~600 мкс
+    idle_level: 7.5%   # ~1500 мкс (центр)
+    max_level: 11.5%   # ~2300 мкс
+
+  - id: servo_tilt
+    output: tilt_pwm
+    min_level: 3.0%
+    idle_level: 7.5%
+    max_level: 11.5%
+
+# ── Стан позиції ──────────────────────────────────────────
+globals:
+  - id: pan_pos
+    type: float
+    restore_value: false
+    initial_value: "0.0"
+
+  - id: tilt_pos
+    type: float
+    restore_value: false
+    initial_value: "0.0"
+
+  - id: pelco_buf
+    type: std::vector<uint8_t>
+
+# ── Парсер Pelco-D ────────────────────────────────────────
+# Формат пакету: FF [ADDR] [CMD1] [CMD2] [PAN_SPD] [TILT_SPD] [CHK]
+interval:
+  - interval: 10ms
+    then:
+      - lambda: |-
+          while (id(cam_uart).available()) {
+            uint8_t b;
+            id(cam_uart).read_byte(&b);
+
+            // Sync byte — скидаємо буфер
+            if (b == 0xFF) id(pelco_buf).clear();
+            id(pelco_buf).push_back(b);
+
+            // Чекаємо повного пакету
+            if (id(pelco_buf).size() < 7) continue;
+
+            auto& buf = id(pelco_buf);
+
+            // Перевірка checksum
+            uint8_t chk = (buf[1] + buf[2] + buf[3] + buf[4] + buf[5]) & 0xFF;
+            if (chk != buf[6]) {
+              id(pelco_buf).clear();
+              continue;
+            }
+
+            uint8_t cmd2     = buf[3];
+            float   spd_pan  = (buf[4] / 63.0f) * 0.05f;
+            float   spd_tilt = (buf[5] / 63.0f) * 0.05f;
+
+            // Stop — ігноруємо
+            if (cmd2 == 0x00) {
+              id(pelco_buf).clear();
+              continue;
+            }
+
+            // Auto/Preset команда (центральна кнопка) — центруємо
+            if (cmd2 == 0x0F) {
+              ESP_LOGD("ptz", "Center command");
+              id(pan_pos)  = 0.0f;
+              id(tilt_pos) = 0.0f;
+              id(servo_pan).write(0.0f);
+              id(servo_tilt).write(0.0f);
+              id(pelco_buf).clear();
+              continue;
+            }
+
+            ESP_LOGD("ptz", "Pelco-D cmd2=0x%02X pan_spd=%.3f tilt_spd=%.3f", cmd2, spd_pan, spd_tilt);
+
+            float pan  = id(pan_pos);
+            float tilt = id(tilt_pos);
+
+            if (cmd2 & 0x02) pan  = min( 1.0f, pan  + spd_pan);   // Right
+            if (cmd2 & 0x04) pan  = max(-1.0f, pan  - spd_pan);   // Left
+            if (cmd2 & 0x08) tilt = min( 1.0f, tilt + spd_tilt);  // Up
+            if (cmd2 & 0x10) tilt = max(-1.0f, tilt - spd_tilt);  // Down
+            // 0x00 = Stop — нічого не змінюємо
+
+            ESP_LOGD("ptz", "pan=%.3f tilt=%.3f", pan, tilt);  
+
+            id(pan_pos)  = pan;
+            id(tilt_pos) = tilt;
+            id(servo_pan).write(-pan);
+            id(servo_tilt).write(-tilt);
+
+            id(pelco_buf).clear();
+          }
+
+# ── Home Assistant: ручне керування ──────────────────────
+number:
+  - platform: template
+    name: "Pan"
+    id: pan_number
+    min_value: -1.0
+    max_value: 1.0
+    step: 0.05
+    initial_value: 0.0
+    optimistic: true
+    restore_value: false
+    set_action:
+      lambda: |-
+        id(pan_pos) = x;
+        id(servo_pan).write(-x);
+
+  - platform: template
+    name: "Tilt"
+    id: tilt_number
+    min_value: -1.0
+    max_value: 1.0
+    step: 0.05
+    initial_value: 0.0
+    optimistic: true
+    restore_value: false
+    set_action:
+      lambda: |-
+        id(tilt_pos) = x;
+        id(servo_tilt).write(-x);
+
+button:
+  - platform: template
+    name: "Center"
+    on_press:
+      lambda: |-
+        id(pan_pos)  = 0.0f;
+        id(tilt_pos) = 0.0f;
+        id(servo_pan).write(0.0f);
+        id(servo_tilt).write(0.0f);
