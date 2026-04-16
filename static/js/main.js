@@ -1,3 +1,51 @@
+// ---- i18n ----
+const TRANSLATIONS = {
+  uk: {
+    loginSubtitle: 'Введіть облікові дані для доступу до камери',
+    loginLabel: 'Логін', loginPlaceholder: 'username',
+    passwordLabel: 'Пароль', passwordPlaceholder: 'password',
+    loginBtn: 'Увійти',
+    errEnterLogin: 'Введіть логін', errChecking: 'Перевірка...',
+    errLoginFailed: 'Помилка входу', errConnection: "Помилка з'єднання",
+    logoutBtn: 'Вийти',
+    errLoadDates: 'Не вдалося отримати список дат: ',
+    errLoading: 'Помилка завантаження: ',
+    timelineLabel: 'Timeline — натисніть на відрізок для перегляду запису',
+    timelineEmpty: 'Немає записів для цієї дати',
+    legendCurrent: 'поточна позиція',
+    zoomSuffix: 'хв) · подвійний клік = скинути',
+    tooltipOngoing: 'ongoing',
+    prevClip: '\u23EA Попередній', nextClip: '\u23E9 Наступний', downloadBtn: '\u2B07 Завантажити',
+    speedLabel: 'Швидкість', autoplayLabel: 'Відтворювати наступне автоматично',
+    filterAll: 'Всі', filterChannel: 'Канал ',
+    loadingText: 'Завантаження...', noPhotos: 'Немає фото для цієї дати',
+    lbChannel: 'Канал ',
+  },
+  en: {
+    loginSubtitle: 'Enter credentials to access the camera',
+    loginLabel: 'Login', loginPlaceholder: 'username',
+    passwordLabel: 'Password', passwordPlaceholder: 'password',
+    loginBtn: 'Sign in',
+    errEnterLogin: 'Enter username', errChecking: 'Checking...',
+    errLoginFailed: 'Login error', errConnection: 'Connection error',
+    logoutBtn: 'Logout',
+    errLoadDates: 'Failed to load dates: ',
+    errLoading: 'Load error: ',
+    timelineLabel: 'Timeline — click a segment to view recording',
+    timelineEmpty: 'No recordings for this date',
+    legendCurrent: 'current position',
+    zoomSuffix: 'min) · double-click = reset',
+    tooltipOngoing: 'ongoing',
+    prevClip: '\u23EA Previous', nextClip: '\u23E9 Next', downloadBtn: '\u2B07 Download',
+    speedLabel: 'Speed', autoplayLabel: 'Auto-play next',
+    filterAll: 'All', filterChannel: 'Channel ',
+    loadingText: 'Loading...', noPhotos: 'No photos for this date',
+    lbChannel: 'Channel ',
+  }
+};
+let currentLang = 'uk';
+function t(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.uk)[key] || key; }
+
 // ---- State ----
 let allDates = [];
 let currentDate = null;
@@ -22,7 +70,7 @@ function speedToSlider(speed) {
   return Math.round(Math.log(speed / 0.1) / Math.log(160) * 100);
 }
 function formatSpeed(speed) {
-  return (speed >= 10 ? speed.toFixed(0) : speed.toFixed(1)) + '×';
+  return (speed >= 10 ? speed.toFixed(0) : speed.toFixed(1)) + '\u00D7';
 }
 function loadSettings() {
   try {
@@ -31,6 +79,7 @@ function loadSettings() {
       const s = JSON.parse(saved);
       if (s.speed != null) currentSpeed = s.speed;
       if (s.autoPlayNext != null) autoPlayNext = !!s.autoPlayNext;
+      if (s.lang != null) currentLang = s.lang;
     }
   } catch(e) {}
   el('speed-slider').value = speedToSlider(currentSpeed);
@@ -38,7 +87,11 @@ function loadSettings() {
   el('autoplay-next').checked = autoPlayNext;
 }
 function saveSettings() {
-  localStorage.setItem('cameraViewerSettings', JSON.stringify({speed: currentSpeed, autoPlayNext: autoPlayNext}));
+  localStorage.setItem('cameraViewerSettings', JSON.stringify({
+    speed: currentSpeed,
+    autoPlayNext: autoPlayNext,
+    lang: currentLang,
+  }));
 }
 function onSpeedChange(sliderVal) {
   currentSpeed = sliderToSpeed(sliderVal);
@@ -49,6 +102,45 @@ function onSpeedChange(sliderVal) {
 function onAutoplayChange(checked) {
   autoPlayNext = checked;
   saveSettings();
+}
+
+// ---- Language ----
+function switchLanguage() {
+  currentLang = currentLang === 'uk' ? 'en' : 'uk';
+  saveSettings();
+  applyLanguage();
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLang;
+  // Login view
+  el('login-subtitle').textContent = t('loginSubtitle');
+  el('login-label-username').textContent = t('loginLabel');
+  el('login-username').placeholder = t('loginPlaceholder');
+  el('login-label-password').textContent = t('passwordLabel');
+  el('login-password').placeholder = t('passwordPlaceholder');
+  el('login-btn').textContent = t('loginBtn');
+  // Header
+  el('logout-btn').textContent = t('logoutBtn');
+  // Timeline
+  el('timeline-label').textContent = t('timelineLabel');
+  el('timeline-empty').textContent = t('timelineEmpty');
+  el('legend-current').textContent = t('legendCurrent');
+  // Player controls (icon + text stored together in translation key)
+  el('btn-prev-clip').textContent = t('prevClip');
+  el('btn-next-clip').textContent = t('nextClip');
+  el('btn-download').textContent = t('downloadBtn');
+  el('speed-label').textContent = t('speedLabel');
+  el('autoplay-label').textContent = t('autoplayLabel');
+  // Gallery
+  el('loading-text').textContent = t('loadingText');
+  el('events-empty').textContent = t('noPhotos');
+  // Lang button shows opposite language
+  el('lang-btn').textContent = currentLang === 'uk' ? 'EN' : 'UK';
+  // Re-render dynamic content
+  updateZoomLabel();
+  if (allRecords.length > 0) renderTimeline();
+  if (allImages.length > 0 || allRecords.length > 0) renderGallery();
 }
 
 // ---- Utils ----
@@ -87,9 +179,9 @@ async function doLogin() {
   const username = el('login-username').value.trim();
   const password = el('login-password').value;
   errEl.style.display = 'none';
-  if (!username) { showLoginError('Введіть логін'); return; }
+  if (!username) { showLoginError(t('errEnterLogin')); return; }
   btn.disabled = true;
-  btn.textContent = 'Перевірка...';
+  btn.textContent = t('errChecking');
   try {
     const r = await fetch('/api/login', {
       method: 'POST',
@@ -97,13 +189,13 @@ async function doLogin() {
       body: JSON.stringify({ username, password }),
     });
     const data = await r.json();
-    if (!r.ok) { showLoginError(data.error || 'Помилка входу'); return; }
+    if (!r.ok) { showLoginError(data.error || t('errLoginFailed')); return; }
     showMainView();
   } catch (e) {
-    showLoginError('Помилка з\'єднання');
+    showLoginError(t('errConnection'));
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Увійти';
+    btn.textContent = t('loginBtn');
   }
 }
 
@@ -138,7 +230,7 @@ async function loadDates() {
       await loadDate(allDates[0]);
     }
   } catch (e) {
-    showBanner('Не вдалося отримати список дат: ' + e.message);
+    showBanner(t('errLoadDates') + e.message);
   }
 }
 
@@ -166,7 +258,7 @@ async function loadDate(dateStr) {
     renderGallery();
     hideBanner();
   } catch (e) {
-    showBanner('Помилка завантаження: ' + e.message);
+    showBanner(t('errLoading') + e.message);
   } finally {
     el('events-loading').style.display = 'none';
   }
@@ -186,11 +278,9 @@ function updateDateNavBtns() {
 function navigateDate(dir) {
   if (!currentDate) return;
   if (dir < 0) {
-    // Go to nearest older date (largest date string that is still < currentDate)
     const older = allDates.filter(d => d < currentDate).sort();
     if (older.length > 0) loadDate(older[older.length - 1]);
   } else {
-    // Go to nearest newer date (smallest date string that is still > currentDate)
     const newer = allDates.filter(d => d > currentDate).sort();
     if (newer.length > 0) loadDate(newer[0]);
   }
@@ -203,8 +293,7 @@ function tlSecsToPercent(secs) {
   return ((secs - timelineViewStart) / tlWindowSecs()) * 100;
 }
 function tlApplyZoom(newZoom, anchorSecs) {
-  // anchorSecs: the time that should stay under the cursor
-  newZoom = Math.max(1, Math.min(288, newZoom)); // max ~5min window
+  newZoom = Math.max(1, Math.min(288, newZoom));
   const newWindow = 86400 / newZoom;
   const anchorRatio = (anchorSecs - timelineViewStart) / tlWindowSecs();
   let newStart = anchorSecs - anchorRatio * newWindow;
@@ -219,7 +308,7 @@ function updateZoomLabel() {
   const label = el('timeline-zoom-label');
   if (timelineZoom <= 1) { label.style.display = 'none'; return; }
   const wMin = Math.round(tlWindowSecs() / 60);
-  label.textContent = '\u{1F50D} ' + secsToTime(Math.floor(timelineViewStart)) + ' \u2014 ' + secsToTime(Math.floor(tlViewEnd())) + ' (' + wMin + ' хв) · подвійний клік = скинути';
+  label.textContent = '\uD83D\uDD0D ' + secsToTime(Math.floor(timelineViewStart)) + ' \u2014 ' + secsToTime(Math.floor(tlViewEnd())) + ' (' + wMin + ' ' + t('zoomSuffix');
   label.style.display = 'inline';
 }
 
@@ -228,7 +317,6 @@ function renderTimelineHours() {
   hoursEl.textContent = '';
   const windowSecs = tlWindowSecs();
   const viewEnd = tlViewEnd();
-  // Choose a tick interval that gives ~8–12 labels
   const niceSteps = [60, 120, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200];
   const targetStep = windowSecs / 10;
   const step = niceSteps.find(s => s >= targetStep) || 43200;
@@ -275,9 +363,7 @@ function renderTimeline() {
     } else {
       endSecs = timeToSecs(rec.end);
     }
-    // Skip segments fully outside visible window
     if (endSecs < timelineViewStart || startSecs > viewEnd) return;
-    // Clip to visible window
     const visStart = Math.max(startSecs, timelineViewStart);
     const visEnd = Math.min(endSecs, viewEnd);
     const left = tlSecsToPercent(visStart);
@@ -287,8 +373,8 @@ function renderTimeline() {
     seg.className = 'timeline-segment ' + rec.type + (rec.ongoing ? ' ongoing' : '');
     seg.style.left = left + '%';
     seg.style.width = Math.min(width, 100 - left) + '%';
-    const durationStr = rec.duration ? rec.duration + 's' : 'ongoing';
-    seg.title = (rec.type === 'alert' ? 'Alert' : 'Periodic') + ': ' + rec.start + ' \u2014 ' + (rec.ongoing ? 'ongoing' : rec.end) + ' (' + durationStr + ')';
+    const durationStr = rec.duration ? rec.duration + 's' : t('tooltipOngoing');
+    seg.title = (rec.type === 'alert' ? 'Alert' : 'Periodic') + ': ' + rec.start + ' \u2014 ' + (rec.ongoing ? t('tooltipOngoing') : rec.end) + ' (' + durationStr + ')';
     seg.dataset.idx = idx;
     seg.addEventListener('click', function(e) { e.stopPropagation(); playRecord(idx); });
     tl.insertBefore(seg, cursor);
@@ -352,7 +438,7 @@ function playRecord(idx) {
   const badge = el('video-type-badge');
   badge.textContent = rec.type === 'alert' ? 'Alert' : 'Periodic';
   badge.className = 'badge ' + rec.type;
-  const endLabel = rec.ongoing ? 'ongoing...' : rec.end;
+  const endLabel = rec.ongoing ? t('tooltipOngoing') + '...' : rec.end;
   setText('video-time-range', rec.start + ' \u2014 ' + endLabel);
   setText('video-size', rec.size);
   const dl = el('btn-download');
@@ -405,8 +491,8 @@ function renderGallery() {
   allImages.forEach(function(img) { if (img.channel in counts) counts[img.channel]++; });
   document.querySelectorAll('.filter-btn').forEach(function(btn) {
     const ch = btn.dataset.ch;
-    if (ch === 'all') btn.textContent = 'Всі (' + counts.all + ')';
-    else btn.textContent = 'Канал ' + ch + ' (' + (counts[parseInt(ch)] || 0) + ')';
+    if (ch === 'all') btn.textContent = t('filterAll') + ' (' + counts.all + ')';
+    else btn.textContent = t('filterChannel') + ch + ' (' + (counts[parseInt(ch)] || 0) + ')';
   });
 
   const filtered = channelFilter === 'all'
@@ -461,7 +547,6 @@ function renderGallery() {
 }
 
 function setupLazyLoad() {
-  // Observe .thumb containers (not the hidden <img>) within the scrollable grid
   const grid = el('events-grid');
   const observer = new IntersectionObserver(function(entries) {
     entries.forEach(function(entry) {
@@ -512,7 +597,7 @@ function highlightActiveThumb(currentSecs) {
 // ---- Lightbox ----
 function openLightbox(img) {
   el('lightbox-img').src = '/api/thumbnail/' + currentDate + '/' + img.path;
-  el('lightbox-info').textContent = img.time + ' \u00B7 \u041A\u0430\u043D\u0430\u043B ' + img.channel;
+  el('lightbox-info').textContent = img.time + ' \u00B7 ' + t('lbChannel') + img.channel;
   el('lightbox').style.display = 'flex';
 }
 
@@ -541,7 +626,6 @@ function hideBanner() { el('error-banner').style.display = 'none'; }
     tlApplyZoom(timelineZoom * factor, anchorSecs);
   }, { passive: false });
 
-  // Pinch to zoom (touch)
   tl.addEventListener('touchstart', function(e) {
     if (e.touches.length === 2) {
       pinchStartDist = Math.hypot(
@@ -563,7 +647,6 @@ function hideBanner() { el('error-banner').style.display = 'none'; }
       var midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       var rect = tl.getBoundingClientRect();
       var ratio = (midX - rect.left) / rect.width;
-      // Restore to pinch-start state, then apply scale from there
       timelineZoom = pinchStartZoom;
       timelineViewStart = pinchStartViewStart;
       var anchorSecs = timelineViewStart + ratio * tlWindowSecs();
@@ -579,7 +662,6 @@ function hideBanner() { el('error-banner').style.display = 'none'; }
     }
   });
 
-  // Double-click resets zoom
   tl.addEventListener('dblclick', function() {
     timelineZoom = 1;
     timelineViewStart = 0;
@@ -606,12 +688,12 @@ document.addEventListener('keydown', function(e) {
 // ---- Auto-restore session on page load ----
 document.addEventListener('DOMContentLoaded', async function() {
   loadSettings();
+  applyLanguage();
   try {
     const r = await fetch('/api/dates');
     if (r.ok) {
       const data = await r.json();
       allDates = data.dates || [];
-      // Already authenticated — skip login form
       hideEl('login-view');
       el('main-view').style.display = 'flex';
       renderTimelineHours();

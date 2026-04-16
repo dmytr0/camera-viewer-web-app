@@ -1,63 +1,66 @@
+> 🇺🇦 [Українська версія](README.uk.md)
+
 # Camera Viewer
 
-Веб-додаток для перегляду записів з IP-камери безпосередньо з SD-карти через браузер.
+A web app for browsing IP camera recordings directly from the SD card in a browser.
 
-## Для чого
+## Purpose
 
-Камера зберігає відео та фото на вбудовану SD-карту у вигляді сирих H.264/H.265 файлів без зручного інтерфейсу перегляду. Цей додаток слугує як локальний веб-переглядач: підключається до камери по мережі, парсить структуру директорій на SD-карті та надає зручний UI з таймлайном, відеоплеєром і галереєю знімків руху.
+The camera stores video and photos on a built-in SD card as raw H.264/H.265 files with no convenient viewing interface. This app acts as a local web viewer: it connects to the camera over the network, parses the SD card directory structure, and provides a clean UI with a timeline, video player, and motion event gallery.
 
-## Можливості
+## Features
 
-- **Таймлайн 24 години** — всі записи за день у вигляді кольорових відрізків (синій — планові, помаранчевий — тривожні за рухом). Масштабування колесом миші, пінч-жестом на телефоні або трекпаді; подвійний клік — скинути масштаб
-- **Відеоплеєр** — відтворення записів прямо у браузері. Камера пише у нестандартному форматі (HXVF-обгортка над H.264/H.265), додаток автоматично конвертує через ffmpeg у MP4
-- **Регулювання швидкості** — логарифмічний повзунок від 0.1× до 16×
-- **Автоперехід** — автоматичне відтворення наступного кліпу після завершення поточного
-- **Галерея знімків руху** — мініатюри фото з детектора руху з фільтрацією по каналу камери, ліниве завантаження при прокрутці
-- **Лайтбокс** — повноекранний перегляд фото
-- **Навігація по датах** — кнопки вперед/назад між днями, в яких є записи
-- **Клавіатурні скорочення** — `←` / `→` для переходу між кліпами, `Esc` для закриття лайтбоксу
-- **Кеш відео** — транскодовані файли зберігаються на диск для підтримки перемотування. Автоматичне очищення: максимум 500 МБ або 7 днів
-- **Авторизація** — вхід через облікові дані камери, сесія зберігається між перезавантаженнями сторінки
+- **24-hour timeline** — all recordings for the day as coloured segments (blue = periodic, orange = motion alert). Zoom with mouse wheel, pinch gesture on phone or trackpad; double-click to reset zoom
+- **Video player** — play recordings directly in the browser. The camera writes in a non-standard format (HXVF wrapper over H.264/H.265); the app automatically converts via ffmpeg to MP4
+- **Playback speed** — logarithmic slider from 0.1× to 16×
+- **Auto-play next** — automatically plays the next clip when the current one ends
+- **Motion event gallery** — thumbnail photos from the motion detector, filterable by camera channel, with lazy loading on scroll
+- **Lightbox** — full-screen photo viewer
+- **Language switcher** — Ukrainian / English, remembered in the browser
+- **Date navigation** — previous/next buttons between days that have recordings
+- **Keyboard shortcuts** — `←` / `→` to navigate clips, `Esc` to close lightbox
+- **Video cache** — transcoded files are stored on disk to support seeking. Auto-eviction: maximum 500 MB or 7 days
+- **Authentication** — login with camera credentials; session persists across page reloads
 
-## Вимоги
+## Requirements
 
 - Python 3.9+
-- [ffmpeg](https://ffmpeg.org/) у системному PATH
-- IP-камера з доступом до SD-карти через HTTP (сумісна з HiXVision/HiSilicon)
+- [ffmpeg](https://ffmpeg.org/) on the system PATH
+- IP camera with HTTP access to the SD card (compatible with HiXVision/HiSilicon)
 
-## Запуск
+## Getting Started
 
 ```bash
-# 1. Встановити залежності
+# 1. Install dependencies
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# 2. Налаштувати середовище
+# 2. Configure
 cp .env.example .env
-# Відредагувати .env: вказати адресу камери та секретний ключ
+# Edit .env: set the camera address and a secret key
 
-# 3. Запустити
+# 3. Run
 python app.py
 ```
 
-Відкрити у браузері: `http://localhost:<PORT>` (порт з `.env`, за замовчуванням `5000`)
+Open in browser: `http://localhost:<PORT>` (port from `.env`, default `5000`)
 
-## Конфігурація
+## Configuration
 
-| Змінна | За замовчуванням | Опис |
+| Variable | Default | Description |
 |---|---|---|
-| `CAMERA_HOST` | `192.168.1.100:80` | Адреса камери (host:port) |
-| `SECRET_KEY` | `dev-secret-key` | Секретний ключ Flask-сесій (змінити для production) |
-| `PORT` | `5000` | Порт веб-сервера |
+| `CAMERA_HOST` | `192.168.1.100:80` | Camera address (host:port) |
+| `SECRET_KEY` | `dev-secret-key` | Flask session secret key (change for production) |
+| `PORT` | `5000` | Web server port |
 
-## Структура проєкту
+## Project Structure
 
 ```
-app.py                  # Flask бекенд: проксі до камери, конвертація відео
-templates/index.html    # HTML розмітка
-static/css/main.css     # Стилі (темна тема)
-static/js/main.js       # Логіка UI: таймлайн, плеєр, галерея
-requirements.txt        # Python-залежності
-.env.example            # Приклад конфігурації
+app.py                  # Flask backend: camera proxy, video conversion
+templates/index.html    # HTML markup
+static/css/main.css     # Styles (dark theme)
+static/js/main.js       # UI logic: timeline, player, gallery
+requirements.txt        # Python dependencies
+.env.example            # Configuration template
 ```

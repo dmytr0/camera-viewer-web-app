@@ -44,6 +44,8 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 #date-input::-webkit-calendar-picker-indicator { filter: invert(0.5); }
 .btn-logout { background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-left: 12px; }
 .btn-logout:hover { border-color: var(--cursor); color: var(--cursor); }
+.btn-lang { background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; margin-left: 8px; }
+.btn-lang:hover { border-color: var(--accent); color: var(--accent); }
 
 /* CONTENT */
 .content { flex: 1; max-width: 1200px; margin: 0 auto; width: 100%; padding: 16px; }

@@ -12,13 +12,13 @@
 <div id="login-view">
   <div class="login-box">
     <h1>&#128249; Camera Viewer</h1>
-    <p>Введіть облікові дані для доступу до камери</p>
+    <p id="login-subtitle">Введіть облікові дані для доступу до камери</p>
     <div class="field">
-      <label for="login-username">Логін</label>
+      <label for="login-username" id="login-label-username">Логін</label>
       <input type="text" id="login-username" autocomplete="username" placeholder="username">
     </div>
     <div class="field">
-      <label for="login-password">Пароль</label>
+      <label for="login-password" id="login-label-password">Пароль</label>
       <input type="password" id="login-password" autocomplete="current-password" placeholder="password">
     </div>
     <button class="btn-primary" id="login-btn" onclick="doLogin()">Увійти</button>
@@ -35,7 +35,8 @@
       <input type="date" id="date-input" onchange="loadDate(this.value)">
       <button id="btn-next" onclick="navigateDate(1)" disabled>&#9654;</button>
     </div>
-    <button class="btn-logout" onclick="doLogout()">Вийти</button>
+    <button class="btn-lang" id="lang-btn" onclick="switchLanguage()">EN</button>
+    <button class="btn-logout" id="logout-btn" onclick="doLogout()">Вийти</button>
   </div>
 
   <div class="content">
@@ -46,7 +47,7 @@
 
     <!-- TIMELINE -->
     <div class="section">
-      <div class="section-label">Timeline — натисніть на відрізок для перегляду запису</div>
+      <div class="section-label" id="timeline-label">Timeline — натисніть на відрізок для перегляду запису</div>
       <div class="timeline-hours" id="timeline-hours"></div>
       <div class="timeline" id="timeline" onclick="onTimelineClick(event)">
         <div class="timeline-cursor" id="timeline-cursor"></div>
@@ -55,7 +56,7 @@
       <div class="timeline-legend">
         <span><span class="legend-dot" style="background:var(--periodic)"></span>Periodic</span>
         <span><span class="legend-dot" style="background:var(--alert)"></span>Alert / Motion</span>
-        <span style="margin-left:auto;color:var(--cursor);font-size:11px;">&#9474; поточна позиція</span>
+        <span style="margin-left:auto;color:var(--cursor);font-size:11px;">&#9474; <span id="legend-current">поточна позиція</span></span>
         <span id="timeline-zoom-label" style="margin-left:10px;color:var(--text-dim);font-size:11px;display:none;"></span>
       </div>
     </div>
@@ -79,13 +80,13 @@
       </div>
       <div class="player-settings">
         <div class="speed-control">
-          <label for="speed-slider">Швидкість</label>
+          <label for="speed-slider" id="speed-label">Швидкість</label>
           <input type="range" id="speed-slider" min="0" max="100" value="45" oninput="onSpeedChange(this.value)">
           <span class="speed-val" id="speed-display">1.0×</span>
         </div>
         <div class="autoplay-control">
           <input type="checkbox" id="autoplay-next" checked onchange="onAutoplayChange(this.checked)">
-          <label for="autoplay-next">Відтворювати наступне автоматично</label>
+          <label for="autoplay-next" id="autoplay-label">Відтворювати наступне автоматично</label>
         </div>
       </div>
     </div>
@@ -100,7 +101,7 @@
           <button class="filter-btn" data-ch="1" onclick="setChannelFilter(1)">Канал 1</button>
         </div>
       </div>
-      <div class="loading-bar" id="events-loading"><span class="spinner"></span>Завантаження...</div>
+      <div class="loading-bar" id="events-loading"><span class="spinner"></span><span id="loading-text">Завантаження...</span></div>
       <div class="events-grid" id="events-grid"></div>
       <div class="no-items" id="events-empty" style="display:none">Немає фото для цієї дати</div>
     </div>
