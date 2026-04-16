@@ -1,5 +1,7 @@
 > 🇺🇦 [Українська версія](README.uk.md)
 
+> **Disclaimer:** This project was built with AI assistance and is provided as-is, without any warranty. The author takes no responsibility for any damage, data loss, or other consequences resulting from its use. Use at your own risk.
+
 # Camera Viewer
 
 A web app for browsing IP camera recordings directly from the SD card in a browser.
