@@ -47,22 +47,22 @@ wifi:
     password: !secret ap_fallback_password
 
 
-# ── UART від камери (Pelco-D) ─────────────────────────────
-# Камера: Пін 4 (TXD) → ESP GPIO4 (RX)
-#         Пін 3 (RXD) → ESP GPIO5 (TX)  ← опційно
-#         Пін 2 (GND) → ESP GND
+# ── UART from camera (Pelco-D) ────────────────────────────
+# Camera: Pin 4 (TXD) → ESP GPIO4 (RX)
+#         Pin 3 (RXD) → ESP GPIO5 (TX)  ← optional
+#         Pin 2 (GND) → ESP GND
 uart:
   id: cam_uart
   rx_pin: GPIO4
   tx_pin: GPIO5
-  baud_rate: 9600   
+  baud_rate: 9600
   data_bits: 8
   parity: NONE
   stop_bits: 1
 
-# ── PWM виходи для сервоприводів ──────────────────────────
-# Servo Pan  → GPIO6
-# Servo Tilt → GPIO7
+# ── PWM outputs for servos ────────────────────────────────
+# Servo Pan  → GPIO13
+# Servo Tilt → GPIO12
 output:
   - platform: ledc
     id: pan_pwm
@@ -74,15 +74,15 @@ output:
     pin: GPIO12
     frequency: 50 Hz
 
-# ── Сервоприводи ──────────────────────────────────────────
-# Діапазон -1.0 … 0.0 (центр) … +1.0
-# Стандартний сервопривід: 1мс(−1.0) / 1.5мс(0.0) / 2мс(+1.0)
+# ── Servos ────────────────────────────────────────────────
+# Range: -1.0 … 0.0 (center) … +1.0
+# Standard servo: 1ms(−1.0) / 1.5ms(0.0) / 2ms(+1.0)
 servo:
   - id: servo_pan
     output: pan_pwm
-    min_level: 3.0%    # ~600 мкс
-    idle_level: 7.5%   # ~1500 мкс (центр)
-    max_level: 11.5%   # ~2300 мкс
+    min_level: 3.0%    # ~600 µs
+    idle_level: 7.5%   # ~1500 µs (center)
+    max_level: 11.5%   # ~2300 µs
 
   - id: servo_tilt
     output: tilt_pwm
@@ -90,7 +90,7 @@ servo:
     idle_level: 7.5%
     max_level: 11.5%
 
-# ── Стан позиції ──────────────────────────────────────────
+# ── Position state ────────────────────────────────────────
 globals:
   - id: pan_pos
     type: float
@@ -105,8 +105,8 @@ globals:
   - id: pelco_buf
     type: std::vector<uint8_t>
 
-# ── Парсер Pelco-D ────────────────────────────────────────
-# Формат пакету: FF [ADDR] [CMD1] [CMD2] [PAN_SPD] [TILT_SPD] [CHK]
+# ── Pelco-D parser ────────────────────────────────────────
+# Packet format: FF [ADDR] [CMD1] [CMD2] [PAN_SPD] [TILT_SPD] [CHK]
 interval:
   - interval: 10ms
     then:
@@ -115,16 +115,16 @@ interval:
             uint8_t b;
             id(cam_uart).read_byte(&b);
 
-            // Sync byte — скидаємо буфер
+            // Sync byte — reset buffer
             if (b == 0xFF) id(pelco_buf).clear();
             id(pelco_buf).push_back(b);
 
-            // Чекаємо повного пакету
+            // Wait for a full 7-byte packet
             if (id(pelco_buf).size() < 7) continue;
 
             auto& buf = id(pelco_buf);
 
-            // Перевірка checksum
+            // Verify checksum
             uint8_t chk = (buf[1] + buf[2] + buf[3] + buf[4] + buf[5]) & 0xFF;
             if (chk != buf[6]) {
               id(pelco_buf).clear();
@@ -135,13 +135,13 @@ interval:
             float   spd_pan  = (buf[4] / 63.0f) * 0.05f;
             float   spd_tilt = (buf[5] / 63.0f) * 0.05f;
 
-            // Stop — ігноруємо
+            // Stop — ignore
             if (cmd2 == 0x00) {
               id(pelco_buf).clear();
               continue;
             }
 
-            // Auto/Preset команда (центральна кнопка) — центруємо
+            // Auto/Preset command (center button) — move to center
             if (cmd2 == 0x0F) {
               ESP_LOGD("ptz", "Center command");
               id(pan_pos)  = 0.0f;
@@ -161,9 +161,9 @@ interval:
             if (cmd2 & 0x04) pan  = max(-1.0f, pan  - spd_pan);   // Left
             if (cmd2 & 0x08) tilt = min( 1.0f, tilt + spd_tilt);  // Up
             if (cmd2 & 0x10) tilt = max(-1.0f, tilt - spd_tilt);  // Down
-            // 0x00 = Stop — нічого не змінюємо
+            // 0x00 = Stop — no change
 
-            ESP_LOGD("ptz", "pan=%.3f tilt=%.3f", pan, tilt);  
+            ESP_LOGD("ptz", "pan=%.3f tilt=%.3f", pan, tilt);
 
             id(pan_pos)  = pan;
             id(tilt_pos) = tilt;
@@ -173,7 +173,7 @@ interval:
             id(pelco_buf).clear();
           }
 
-# ── Home Assistant: ручне керування ──────────────────────
+# ── Home Assistant: manual control ───────────────────────
 number:
   - platform: template
     name: "Pan"
