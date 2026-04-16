@@ -105,8 +105,8 @@ function onAutoplayChange(checked) {
 }
 
 // ---- Language ----
-function switchLanguage() {
-  currentLang = currentLang === 'uk' ? 'en' : 'uk';
+function switchLanguage(lang) {
+  currentLang = lang || (currentLang === 'uk' ? 'en' : 'uk');
   saveSettings();
   applyLanguage();
 }
@@ -135,8 +135,9 @@ function applyLanguage() {
   // Gallery
   el('loading-text').textContent = t('loadingText');
   el('events-empty').textContent = t('noPhotos');
-  // Lang button shows opposite language
-  el('lang-btn').textContent = currentLang === 'uk' ? 'EN' : 'UK';
+  // Lang switcher — highlight active option
+  el('lang-uk').classList.toggle('active', currentLang === 'uk');
+  el('lang-en').classList.toggle('active', currentLang === 'en');
   // Re-render dynamic content
   updateZoomLabel();
   if (allRecords.length > 0) renderTimeline();

@@ -35,7 +35,9 @@
       <input type="date" id="date-input" onchange="loadDate(this.value)">
       <button id="btn-next" onclick="navigateDate(1)" disabled>&#9654;</button>
     </div>
-    <button class="btn-lang" id="lang-btn" onclick="switchLanguage()">EN</button>
+    <div class="lang-switcher">
+      <button class="lang-opt" id="lang-uk" onclick="switchLanguage('uk')">UK</button><button class="lang-opt" id="lang-en" onclick="switchLanguage('en')">EN</button>
+    </div>
     <button class="btn-logout" id="logout-btn" onclick="doLogout()">Вийти</button>
   </div>
 
