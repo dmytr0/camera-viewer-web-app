@@ -63,6 +63,63 @@
       </div>
     </div>
 
+    <!-- PTZ + LIVE -->
+    <div class="section" id="ptz-section" style="display:none">
+      <div class="section-label" id="ptz-label">PTZ / Live</div>
+      <div class="ptz-layout">
+
+        <!-- D-pad -->
+        <div class="ptz-pad">
+          <button class="ptz-btn ptz-up"    id="ptz-up">&#9650;</button>
+          <button class="ptz-btn ptz-left"  id="ptz-left">&#9664;</button>
+          <button class="ptz-btn ptz-home"  id="ptz-home" title="Home">&#9679;</button>
+          <button class="ptz-btn ptz-right" id="ptz-right">&#9654;</button>
+          <button class="ptz-btn ptz-down"  id="ptz-down">&#9660;</button>
+        </div>
+
+        <div class="ptz-right-col">
+          <!-- Zoom + Focus -->
+          <div class="ptz-zoom-focus">
+            <button class="ptz-btn" id="ptz-zoomin"   title="Zoom In">Z+</button>
+            <button class="ptz-btn" id="ptz-zoomout"  title="Zoom Out">Z&#8722;</button>
+            <button class="ptz-btn" id="ptz-focusout" title="Focus+">F+</button>
+            <button class="ptz-btn" id="ptz-focusin"  title="Focus-">F&#8722;</button>
+          </div>
+
+          <!-- Cruise -->
+          <div class="ptz-cruise">
+            <button class="ptz-btn" id="ptz-hscan" onclick="ptzToggleCruise('hscan')" id="ptz-hscan-label">&#8596; Cruise</button>
+            <button class="ptz-btn" id="ptz-vscan" onclick="ptzToggleCruise('vscan')" id="ptz-vscan-label">&#8597; Cruise</button>
+          </div>
+
+          <!-- Speed -->
+          <div class="ptz-speed-row">
+            <label id="ptz-speed-label">Speed</label>
+            <input type="range" id="ptz-speed" min="1" max="100" value="45">
+            <span id="ptz-speed-val">45</span>
+          </div>
+
+          <!-- Presets -->
+          <div class="ptz-preset-row">
+            <span id="ptz-preset-label">Preset</span>
+            <input type="number" id="ptz-preset-num" value="1" min="1" max="255">
+            <button class="btn-secondary" id="ptz-preset-goto" onclick="ptzPreset('goto')">Call</button>
+            <button class="btn-secondary" id="ptz-preset-save" onclick="ptzPreset('set')">Save</button>
+            <button class="btn-secondary" id="ptz-preset-del"  onclick="ptzPreset('delete')">Del</button>
+          </div>
+
+          <!-- Live stream -->
+          <div class="ptz-live-row">
+            <button class="btn-live" id="btn-live" onclick="toggleLiveStream()">&#9654; Live</button>
+            <span class="live-status" id="live-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live video -->
+      <video id="live-player" style="display:none" autoplay muted playsinline controls></video>
+    </div>
+
     <!-- PLAYER -->
     <div class="section">
       <div class="section-label">Video Player</div>
@@ -117,6 +174,7 @@
   <div class="lb-info" id="lightbox-info"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

@@ -20,6 +20,11 @@ const TRANSLATIONS = {
     filterAll: 'Всі', filterChannel: 'Канал ',
     loadingText: 'Завантаження...', noPhotos: 'Немає фото для цієї дати',
     lbChannel: 'Канал ',
+    ptzLabel: 'PTZ / Live',
+    ptzSpeed: 'Швидкість', ptzPreset: 'Пресет',
+    ptzGoto: 'Перейти', ptzSave: 'Зберегти', ptzDel: 'Видалити',
+    liveBtn: '\u25BA Live', liveStop: '\u25A0 Stop',
+    liveConnecting: 'Підключення...', liveError: 'Помилка стріму',
   },
   en: {
     loginSubtitle: 'Enter credentials to access the camera',
@@ -41,6 +46,11 @@ const TRANSLATIONS = {
     filterAll: 'All', filterChannel: 'Channel ',
     loadingText: 'Loading...', noPhotos: 'No photos for this date',
     lbChannel: 'Channel ',
+    ptzLabel: 'PTZ / Live',
+    ptzSpeed: 'Speed', ptzPreset: 'Preset',
+    ptzGoto: 'Call', ptzSave: 'Save', ptzDel: 'Del',
+    liveBtn: '\u25BA Live', liveStop: '\u25A0 Stop',
+    liveConnecting: 'Connecting...', liveError: 'Stream error',
   }
 };
 let currentLang = 'uk';
@@ -138,6 +148,14 @@ function applyLanguage() {
   // Lang switcher — highlight active option
   el('lang-uk').classList.toggle('active', currentLang === 'uk');
   el('lang-en').classList.toggle('active', currentLang === 'en');
+  // PTZ section
+  el('ptz-label').textContent       = t('ptzLabel');
+  el('ptz-speed-label').textContent = t('ptzSpeed');
+  el('ptz-preset-label').textContent= t('ptzPreset');
+  el('ptz-preset-goto').textContent = t('ptzGoto');
+  el('ptz-preset-save').textContent = t('ptzSave');
+  el('ptz-preset-del').textContent  = t('ptzDel');
+  if (!_liveActive) el('btn-live').textContent = t('liveBtn');
   // Re-render dynamic content
   updateZoomLabel();
   if (allRecords.length > 0) renderTimeline();
@@ -215,6 +233,7 @@ async function doLogout() {
 async function showMainView() {
   hideEl('login-view');
   el('main-view').style.display = 'flex';
+  el('ptz-section').style.display = 'block';
   renderTimelineHours();
   await loadDates();
 }
@@ -614,6 +633,129 @@ function showBanner(msg) {
 }
 function hideBanner() { el('error-banner').style.display = 'none'; }
 
+// ---- PTZ ----
+let _cruiseActive = { hscan: false, vscan: false };
+let _liveActive = false;
+let _liveHls = null;
+let _livePoller = null;
+
+function ptzStart(action) {
+  const speed = el('ptz-speed').value;
+  fetch('/api/ptz/' + action + '?speed=' + speed).catch(function() {});
+}
+function ptzStop() {
+  fetch('/api/ptz/stop').catch(function() {});
+}
+function ptzPreset(action) {
+  const num = parseInt(el('ptz-preset-num').value, 10) - 1; // UI is 1-based, API is 0-based
+  fetch('/api/preset/' + num + '/' + action).catch(function() {});
+}
+function ptzToggleCruise(action) {
+  if (_cruiseActive[action]) {
+    _cruiseActive[action] = false;
+    ptzStop();
+    el('ptz-' + action).classList.remove('pressed');
+  } else {
+    _cruiseActive[action] = true;
+    ptzStart(action);
+    el('ptz-' + action).classList.add('pressed');
+  }
+}
+
+(function initPtz() {
+  el('ptz-speed').addEventListener('input', function() {
+    el('ptz-speed-val').textContent = this.value;
+  });
+
+  const holdBtns = ['up','down','left','right','zoomin','zoomout','focusin','focusout'];
+  holdBtns.forEach(function(act) {
+    const btn = el('ptz-' + act);
+    if (!btn) return;
+    btn.addEventListener('mousedown',   function() { ptzStart(act); });
+    btn.addEventListener('touchstart',  function() { ptzStart(act); }, { passive: true });
+    btn.addEventListener('mouseup',     ptzStop);
+    btn.addEventListener('touchend',    ptzStop);
+    btn.addEventListener('mouseleave',  ptzStop);
+  });
+
+  el('ptz-home').addEventListener('click', function() { ptzStart('home'); });
+})();
+
+// ---- Live Stream ----
+function toggleLiveStream() {
+  if (_liveActive) {
+    stopLiveStream();
+  } else {
+    startLiveStream();
+  }
+}
+
+function startLiveStream() {
+  _liveActive = true;
+  el('btn-live').textContent = t('liveStop');
+  el('btn-live').classList.add('active');
+  el('live-status').textContent = t('liveConnecting');
+
+  fetch('/api/stream/start', { method: 'POST' })
+    .then(function() { pollLiveReady(); })
+    .catch(function() { onLiveError(); });
+}
+
+function stopLiveStream() {
+  _liveActive = false;
+  if (_livePoller) { clearTimeout(_livePoller); _livePoller = null; }
+  if (_liveHls)    { _liveHls.destroy(); _liveHls = null; }
+  fetch('/api/stream/stop', { method: 'POST' }).catch(function() {});
+  el('btn-live').textContent = t('liveBtn');
+  el('btn-live').classList.remove('active');
+  el('live-status').textContent = '';
+  el('live-player').style.display = 'none';
+  el('live-player').src = '';
+}
+
+function pollLiveReady(attempts) {
+  attempts = attempts || 0;
+  if (!_liveActive) return;
+  if (attempts > 30) { onLiveError(); return; }
+  fetch('/api/stream/status')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ready) {
+        attachHlsPlayer('/api/stream/hls/stream.m3u8');
+      } else {
+        _livePoller = setTimeout(function() { pollLiveReady(attempts + 1); }, 500);
+      }
+    })
+    .catch(function() { _livePoller = setTimeout(function() { pollLiveReady(attempts + 1); }, 1000); });
+}
+
+function attachHlsPlayer(src) {
+  el('live-status').textContent = '';
+  const video = el('live-player');
+  video.style.display = 'block';
+
+  if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    _liveHls = new Hls({ lowLatencyMode: true });
+    _liveHls.loadSource(src);
+    _liveHls.attachMedia(video);
+    _liveHls.on(Hls.Events.ERROR, function(e, data) {
+      if (data.fatal) onLiveError();
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari native HLS
+    video.src = src;
+  } else {
+    onLiveError();
+  }
+}
+
+function onLiveError() {
+  el('live-status').textContent = t('liveError');
+  el('btn-live').textContent = t('liveBtn');
+  el('btn-live').classList.remove('active');
+  _liveActive = false;
+}
+
 // ---- Timeline wheel zoom ----
 (function() {
   var tl = document.getElementById('timeline');
@@ -697,6 +839,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       allDates = data.dates || [];
       hideEl('login-view');
       el('main-view').style.display = 'flex';
+      el('ptz-section').style.display = 'block';
       renderTimelineHours();
       if (allDates.length > 0) {
         el('date-input').value = formatDateInput(allDates[0]);

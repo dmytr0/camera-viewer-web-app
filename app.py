@@ -1,15 +1,19 @@
+import asyncio
+import base64
 import hashlib
 import os
 import re
 import subprocess
 import tempfile
+import threading
 import time
 from datetime import timedelta
 from functools import wraps
 
 import requests
+import websockets
 from dotenv import load_dotenv
-from flask import Flask, Response, jsonify, render_template, request, session, send_file
+from flask import Flask, Response, jsonify, render_template, request, session, send_file, send_from_directory
 
 load_dotenv()
 
@@ -19,6 +23,9 @@ app.permanent_session_lifetime = timedelta(days=1)
 
 CAMERA_HOST = os.getenv("CAMERA_HOST", "192.168.1.100:80")
 CAMERA_BASE = f"http://{CAMERA_HOST}"
+
+HLS_DIR = os.path.join(os.path.dirname(__file__), ".hls")
+os.makedirs(HLS_DIR, exist_ok=True)
 
 VIDEO_CACHE_DIR = os.path.join(os.path.dirname(__file__), ".video_cache")
 os.makedirs(VIDEO_CACHE_DIR, exist_ok=True)
@@ -416,6 +423,175 @@ def api_video(date, filepath):
         download_name=out_name,
         conditional=True,
     )
+
+
+# ---------------------------------------------------------------------------
+# PTZ
+# ---------------------------------------------------------------------------
+
+PTZ_ALLOWED = {
+    'up', 'down', 'left', 'right', 'home', 'stop',
+    'zoomin', 'zoomout', 'focusin', 'focusout', 'hscan', 'vscan',
+}
+
+
+@app.route("/api/ptz/<action>")
+@require_auth
+def api_ptz(action):
+    if action not in PTZ_ALLOWED:
+        return jsonify({"error": "Invalid action"}), 400
+    speed = request.args.get("speed", "45")
+    if not re.match(r"^\d{1,3}$", speed) or not (1 <= int(speed) <= 100):
+        return jsonify({"error": "Invalid speed"}), 400
+    try:
+        camera_get(
+            f"/cgi-bin/hi3510/ptzctrl.cgi?-step=0&-act={action}&-speed={speed}",
+            get_creds(),
+        )
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
+@app.route("/api/preset/<int:num>/<action>")
+@require_auth
+def api_preset(num, action):
+    if action not in ("set", "goto", "delete"):
+        return jsonify({"error": "Invalid action"}), 400
+    if not (0 <= num <= 255):
+        return jsonify({"error": "Invalid preset number"}), 400
+    if action == "delete":
+        path = f"/cgi-bin/hi3510/param.cgi?cmd=preset&-act=set&-status=0&-number={num}"
+    elif action == "set":
+        path = f"/cgi-bin/hi3510/param.cgi?cmd=preset&-act=set&-status=1&-number={num}"
+    else:  # goto
+        path = f"/cgi-bin/hi3510/param.cgi?cmd=preset&-act=goto&-status=1&-number={num}"
+    try:
+        camera_get(path, get_creds())
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
+# ---------------------------------------------------------------------------
+# Live stream (WebSocket → HXVF strip → ffmpeg → HLS)
+# ---------------------------------------------------------------------------
+
+_stream_state = {"thread": None, "ffmpeg": None, "active": False}
+_stream_lock = threading.Lock()
+
+
+def _run_live_stream(host, username, password):
+    """Background thread: connect camera WS, strip HXVF, pipe to ffmpeg → HLS."""
+    ws_url = f"ws://{host}/websocket"
+    enc = base64.b64encode(f"{username}:{password}".encode()).decode()
+    stream_request = (
+        f"GET http://{host}/livestream.cgi?stream=11&action=play&media=video_audio_data HTTP/1.1\r\n"
+        f"Connection: Keep-Alive\r\n"
+        f"Cache-Control: no-cache\r\n"
+        f"Authorization: Basic {enc}\r\n"
+        f"Content-Length: 42\r\n"
+        f"\r\n"
+        f"Cseq: 1\r\nTransport: RTP/AVP/TCP;unicast;interleaved=0-1\r\n"
+    )
+    m3u8 = os.path.join(HLS_DIR, "stream.m3u8")
+    ffmpeg_cmd = [
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-f", "h264", "-i", "pipe:0",
+        "-c:v", "copy",
+        "-hls_time", "2",
+        "-hls_list_size", "5",
+        "-hls_flags", "delete_segments+append_list",
+        "-hls_segment_filename", os.path.join(HLS_DIR, "seg%03d.ts"),
+        m3u8,
+    ]
+
+    async def _stream():
+        try:
+            async with websockets.connect(ws_url, ping_interval=None) as ws:
+                await ws.send(stream_request)
+                proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
+                with _stream_lock:
+                    _stream_state["ffmpeg"] = proc
+                buf = bytearray()
+                while _stream_state["active"]:
+                    try:
+                        chunk = await asyncio.wait_for(ws.recv(), timeout=5)
+                    except asyncio.TimeoutError:
+                        continue
+                    if isinstance(chunk, str):
+                        continue
+                    buf.extend(chunk)
+                    # Strip HXVF wrappers from accumulated buffer
+                    clean = strip_hxvf_wrapper(bytes(buf))
+                    if clean and proc.stdin:
+                        try:
+                            proc.stdin.write(clean)
+                            proc.stdin.flush()
+                        except OSError:
+                            break
+                    buf.clear()
+                if proc.stdin:
+                    proc.stdin.close()
+                proc.wait()
+        except Exception:
+            pass
+        finally:
+            with _stream_lock:
+                _stream_state["active"] = False
+                _stream_state["ffmpeg"] = None
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(_stream())
+    finally:
+        loop.close()
+
+
+@app.route("/api/stream/start", methods=["POST"])
+@require_auth
+def api_stream_start():
+    with _stream_lock:
+        if _stream_state["active"]:
+            return jsonify({"ok": True, "already": True})
+        _stream_state["active"] = True
+        creds = get_creds()
+        t = threading.Thread(
+            target=_run_live_stream,
+            args=(CAMERA_HOST, creds["username"], creds["password"]),
+            daemon=True,
+        )
+        _stream_state["thread"] = t
+        t.start()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/stream/stop", methods=["POST"])
+@require_auth
+def api_stream_stop():
+    with _stream_lock:
+        _stream_state["active"] = False
+        proc = _stream_state.get("ffmpeg")
+        if proc:
+            proc.terminate()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/stream/status")
+@require_auth
+def api_stream_status():
+    m3u8 = os.path.join(HLS_DIR, "stream.m3u8")
+    return jsonify({
+        "active": _stream_state["active"],
+        "ready": os.path.exists(m3u8),
+    })
+
+
+@app.route("/api/stream/hls/<path:filename>")
+@require_auth
+def api_stream_hls(filename):
+    return send_from_directory(HLS_DIR, filename)
 
 
 if __name__ == "__main__":
